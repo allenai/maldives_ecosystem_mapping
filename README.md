@@ -1,8 +1,6 @@
 Maldives Ecosystem Mapping
 --------------------------
 
-Introduction (Mark can you fill this in? some intro about the project and who it's a collaboration with)
-
 This repository contains the workflow and configuration files needed to reproduce the training of the ecosystem category segmentation model, and supports applying the model on new images.
 
 
