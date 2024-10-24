@@ -1,11 +1,27 @@
-Maldives Ecosystem Mapping
---------------------------
+#Maldives Ecosystem Mapping
+
+As part of the Global Ecosystem Atlas Maldives Accelerator project (https://earthobservations.org/solutions/incubators/global-ecosystems-atlas), Ai2
+has work with partners to create the first version of an AI segmentation model (building off the foundation of Satlas) that can be use to classify teresterial and near land  ecosystem 
+in the Maldives 
 
 This repository contains the workflow and configuration files needed to reproduce the training of the ecosystem category segmentation model, and supports applying the model on new images.
 
+You will also find in the [Data Access Information](#data-access-information) section below how to access the classification created for various sensors, checkpoint file and the Annotations created for this project in geojson format.
 
-Download Dataset
-----------------
+#Training
+##Requirements
+
+* Python (3.12 is recommended)
+* GPU 
+
+Notes:
+
+Testing was done on a Google Cloud VM with following specification 
+* n1-standard-8  ( 8 vCPUs and 30 GB RAM)
+* GPU: 1 x NVIDIA T4
+* Image: mage Deep Learning VM with CUDA 11.8, M125 (Debian 11, Python 3.10. With CUDA 11.8 preinstalled.)
+
+##Download Dataset
 
 To train and apply the model, first obtain the rslearn dataset from the release bucket on Google Cloud Storage:
 
@@ -55,17 +71,15 @@ You can open Sentinel-2 images and corresponding labels in GIS software like qgi
 
     qgis $DATASET_PATH/windows/crops_sentinel2/HaaAlifu_Baarah_LD0987_30081_-75425_sentinel2/layers/sentinel2/B02_B03_B04_B08/geotiff.tif $DATASET_PATH/windows/crops_sentinel2/HaaAlifu_Baarah_LD0987_30081_-75425_sentinel2/layers/label/label/geotiff.tif
 
-
-Training
---------
-
-First, install rslearn (Python 3.12 is recommended):
+##Install RSLearn
 
     git clone https://github.com/allenai/rslearn.git
+    python3 -m venv your_env_name
+    source your_env_name/bin/activate
     cd rslearn
     pip install .[extra]
 
-Train the model:
+##Train the model:
 
     cd /path/to/maldives_ecosystem_mapping/
     rslearn model fit --config model_configs/config_sentinel2.yaml --data.init_args.path $DATASET_PATH
@@ -76,29 +90,36 @@ After training, find the best checkpoint and copy it for convenience:
 
 You may need to change the `version_0` to the correct subfolder in `lightning_logs` if you ran `model fit` multiple times.
 
-As an alternative to training the model, you can download the released model:
-
-    wget https://storage.googleapis.com/ai2-earthsystem-release/Release/GlobalEcosystemSegmenter/202410/weights/sentinel2.ckpt -O best.ckpt
 
 You can visualize the model's outputs over the validation set:
 
     rslearn model test --config model_configs/config_sentinel2.yaml --data.init_args.path $DATASET_PATH --model.init_args.visualize_dir vis/ --ckpt_path best.ckpt
 
+Note:  You will need to create the vis directory under maldives_ecosystem_mapping directory if it does not exist
+(example /path/to/maldives_ecosystem_mapping/vis/) 
 
-Prediction
-----------
+##Prediction
 
 Now we can generate GeoTIFF outputs across all the islands:
 
-    rslearn model predict --config model_configs/config_sentinel2.yaml --data.init_args.path $DATASET_PATH --ckpt_path best.ckpt
+    rslearn model predict --config model_configs/config_sentinel2.yaml --data.init_args.path $DATASET_PATH --ckpt_path best.ckpt --data.init_args.num_worker 8
+
+Note:  You can set --data.init_args.num_workers to value that is approriate to your environment, for example for 8 cpu machine
+you might want to set this to 8 as in the example above.
 
 The outputs will appear in paths like `windows/images_sentinel2/*/layers/output/output/geotiff.tif` (overwriting the outputs included in the rslearn dataset download).
 
     qgis $DATASET_PATH/windows/images_sentinel2/HaaAlifu_Baarah_LD0987_sentinel2/layers/sentinel2/B02_B03_B04_B08/geotiff.tif $DATASET_PATH/windows/images_sentinel2/HaaAlifu_Baarah_LD0987_sentinel2/layers/output/output/geotiff.tif
 
 
-Obtaining Images
-----------------
+Note: 
+
+As an alternative to training the model, you can download the released model we have made available, see the Check Point 
+File section in the Data Access Information section below for more information these models.  Example: 
+
+    wget https://storage.googleapis.com/ai2-earthsystem-release/Release/GlobalEcosystemSegmenter/202410/weights/sentinel2.ckpt -O best.ckpt
+
+##Obtaining Images
 
 The dataset includes Sentinel-2 images, but if you want to obtain PlanetScope images, or get new Sentinel-2 images, first swap out the dataset config with one that specifies a data source (which is used by rslearn to automatically retrieve images).
 
@@ -117,9 +138,7 @@ Before training the model, swap the configuration back:
 
     cp dataset_configs/config_train.json $DATASET_PATH/config.json
 
-
-Apply the Model on a New Location
----------------------------------
+##Apply the Model on a New Location
 
 The model is only trained on ecosystem labels in the Maldives, so it likely will not give accurate results in other regions, but it is nevertheless possible to apply the model elsewhere.
 
@@ -143,14 +162,44 @@ Visualize in qgis:
 
     qgis $DATASET_PATH/windows/new_locations/name/layers/sentinel2/B02_B03_B04_B08/geotiff.tif $DATASET_PATH/windows/new_locations/name/layers/output/output/geotiff.tif
 
+#Data Access Information
+All data listed below is located in a Google Cloud Service Bucket named ai2-earthsystem-release, this bucket is open
+to the public.  See https://cloud.google.com/storage/docs/downloading-objects#cli-download-object to learn more about how to use Google Cloud tools for the downloading of data
 
-License
--------
+##Annotation Data:
+Annotation data is stored in geojson format, it is located in  gs://ai2-earthsystem-release/Release/GlobalEcosystemSegmenter/202410/  folder in geojson format. 
 
-The code, model, and dataset are released under Apache License 2.0.
+Name of the file is [IslandName]_[DateOfCollect]_labels.geojson 
 
+Example for the Island named baarh we annotated image that was collected on 2024-02-24-05-48 gs://ai2-earthsystem-release/Release/GlobalEcosystemSegmenter/202410/TrainingData/baarah_2024-02-24-05-48_labels.geojson
 
-Contact
--------
+##Classification Prediction Data
+Data is available at gs://ai2-earthsystem-release/Release/GlobalEcosytemAtlas/[version].  We have named version (example 202410) that include date of generation, and we also have a folder called latest which will always have the most recent generated files.
 
+Our models produce a single-band geotiff, with that band's value corresponding to an ecosystem type (see below section for mapping) for each island we have data available for each of the following sensors as well as having a geotiff of the annotations.  Details below
+
+* Sentinel-2: We have processed 1247 islands and placed data in the folder named sentinel2  (example: gs://ai2-earthsystem-release/Release/GlobalEcosytemAtlas/202410/Maldives/sentinel2/Baarah.tif).  Note, the number of islands processed is less then PlanetScope because very small islands in Sentinel-2 (less then 40 m x 40 m) would not produce any pixels of classifications. 
+* PlanetScope: We have processed 1419 islands and placed data in the folder named planetscope (example: gs://ai2-earthsystem-release/Release/GlobalEcosytemAtlas/202410/Maldives/planetscope/Baarah.tif)
+* Labels:  These are annotation in  geotiff format, this can be helpful for analyze predictions against annotations. 
+
+The following are some additional notes on the data.
+* The source of the Island Name was from data provided by Maldives, we have a copy of this data in geojson format at gs://ai2-earthsystem-release/Release/GlobalEcosytemAtlas/202410/Maldives/island_geo.geojson. 
+* Some islands in this file did not have names, for these, we used the FCODE property that was in this file.  Below are sources of data we have output for
+
+#Checkpoint files (Models and Weights)
+As mentioned above we have made available checkpoint files that allow you to run predictions using rslearn without the need to train
+the models yourself. 
+
+The following Checkpoint files are available at gs://ai2-earthsystem-release/Release/GlobalEcosystemSegmenter/[version]/weights/[satelitte_source].ckpt
+* Sentinel-2 (exampl path gs://ai2-earthsystem-release/Release/GlobalEcosystemSegmenter/202410/weights/sentinel2.ckpt
+* PlanetScope (example path gs://ai2-earthsystem-release/Release/GlobalEcosystemSegmenter/202410/weights/planetscope.ckpt
+
+#License
+The following are the license for artifacts mentioned in this document
+* Code: Apache License 2.0.
+* Checkpoint files:  Apache License 2.0
+* Annotation Data:  Creative Commons (https://creativecommons.org/publicdomain/zero/1.0/)
+* Classification Prediction Data: Open Data Commons (https://opendatacommons.org/licenses/by/1-0/)
+
+#Contact
 For questions and suggestions, please open an issue on GitHub.
