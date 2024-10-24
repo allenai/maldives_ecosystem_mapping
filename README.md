@@ -184,9 +184,9 @@ A PlanetScope model checkpoint is available in addition to the Sentinel-2 checkp
 * PlanetScope: `gs://ai2-earthsystem-release/Release/GlobalEcosystemSegmenter/202410/weights/planetscope.ckpt`
 
 ## License
-* Code and model configuration files: Apache License 2.0
+* Code, model configuration files, and model checkpoints: Apache License 2.0
 * Annotations: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)
-* Ecosystem map predictions and model checkpoints: Open Data Commons Attribution License v1.0 (https://opendatacommons.org/licenses/by/1-0/)
+* Ecosystem map predictions: Open Data Commons Attribution License v1.0 (https://opendatacommons.org/licenses/by/1-0/)
 
 ## Contact
 For questions and suggestions, please open an issue on GitHub.
