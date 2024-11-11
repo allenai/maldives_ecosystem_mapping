@@ -80,6 +80,7 @@ You can open Sentinel-2 images and corresponding labels in GIS software like qgi
 ### Train the model:
 
     cd /path/to/maldives_ecosystem_mapping/
+    cp dataset_configs/config_train.json $DATASET_PATH/config.json
     rslearn model fit --config model_configs/config_sentinel2.yaml --data.init_args.path $DATASET_PATH
 
 After training, find the best checkpoint and copy it for convenience:
@@ -101,6 +102,7 @@ You can visualize the model's outputs over the validation set:
 
 Now we can generate GeoTIFF outputs across all the islands:
 
+    cp dataset_configs/config_train.json $DATASET_PATH/config.json
     rslearn model predict --config model_configs/config_sentinel2.yaml --data.init_args.path $DATASET_PATH --ckpt_path best.ckpt --data.init_args.num_workers 8
 
 The outputs will appear in paths like `windows/images_sentinel2/*/layers/output/output/geotiff.tif` (overwriting the outputs included in the rslearn dataset download).
